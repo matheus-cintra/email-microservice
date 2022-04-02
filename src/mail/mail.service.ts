@@ -1,23 +1,32 @@
-import { InjectQueue } from '@nestjs/bull';
-import { Injectable } from '@nestjs/common';
-import { Queue } from 'bull';
+import { MailerService } from '@nestjs-modules/mailer';
+import { Injectable, Logger } from '@nestjs/common';
+import { plainToInstance } from 'class-transformer';
+
+class User {
+  name: string;
+  email: string;
+}
 
 @Injectable()
 export class MailService {
-  constructor(
-    @InjectQueue(process.env.QUEUE_NAME) private readonly mailQueue: Queue,
-  ) {}
+  private readonly logger = new Logger(this.constructor.name);
+
+  constructor(private readonly mailerService: MailerService) {}
 
   async sendConfirmationEmail(user: any, code: string): Promise<boolean> {
-    try {
-      await this.mailQueue.add('confirmation', {
-        user,
-        code,
-      });
-      return true;
-    } catch (error) {
-      // this.logger.error(`Error queueing confirmation email to user ${user.email}`)
-      return false;
-    }
+    this.logger.log(`Sending confirmation email to '${user.email}'`);
+
+    const url = `http://localhost:3000/auth/${code}/confirm`;
+
+    const result = await this.mailerService.sendMail({
+      template: 'confirmation',
+      context: {
+        ...plainToInstance(User, user),
+        url: url,
+      },
+      subject: `Welcome to appointments service! Please Confirm Your Email Address`,
+      to: user.email,
+    });
+    return result;
   }
 }
