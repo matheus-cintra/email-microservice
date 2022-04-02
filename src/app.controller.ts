@@ -8,8 +8,6 @@ export class AppController {
 
   @EventPattern('email')
   async notificate(@Payload() data: any): Promise<any> {
-    console.warn('send email', data);
-
-    return data;
+    this.appService.sendEmail(data);
   }
 }
